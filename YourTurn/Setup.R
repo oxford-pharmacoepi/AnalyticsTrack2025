@@ -28,6 +28,7 @@ library(omock)
 mockDatasetsFolder()
 
 # download mock dataset
+options(timeout = 600)
 downloadMockDataset(datasetName = "GiBleed")
 downloadMockDataset(datasetName = "synthea-covid19-10k")
 
