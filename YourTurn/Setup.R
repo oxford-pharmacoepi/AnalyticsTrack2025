@@ -37,12 +37,3 @@ downloadMockDataset(datasetName = "GiBleed")
 cdm <- mockCdmFromDataset(datasetName = "GiBleed")
 
 cdm
-
-# We can insert this dataset to a duckdb database
-library(CDMConnector)
-library(duckdb)
-
-dbs <- dbSource(con = dbConnect(drv = duckdb()), writeSchema = "main")
-dbcdm <- insertCdmTo(cdm = cdm, to = dbs)
-
-dbcdm
