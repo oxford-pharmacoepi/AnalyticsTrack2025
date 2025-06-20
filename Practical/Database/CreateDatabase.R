@@ -59,7 +59,7 @@ dbdir <- here::here("Database", "TestDatabase.duckdb")
 # delete database if exist
 if (file.exists(dbdir)) {
   drv <- duckdb::duckdb(dbdir = dbdir)
-  suppressWarnings(duckdb::duckdb_shutdown(drv = drv))
+  duckdb::duckdb_shutdown(drv = drv)
   unlink(x = dbdir)
 }
 
@@ -70,3 +70,6 @@ DBI::dbExecute(con, "CREATE SCHEMA results")
 src <- CDMConnector::dbSource(con = con, writeSchema = "main")
 cdm <- CDMConnector::insertCdmTo(cdm = cdm, to = src)
 CDMConnector::cdmDisconnect(cdm = cdm)
+
+# delete objects
+rm(cdm, conditionOccurrence, drugExposure, drv, con, src, dbdir)

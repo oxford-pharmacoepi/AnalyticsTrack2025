@@ -23,3 +23,6 @@ cdm <- cdmFromCon(
 cdm
 
 # characterise the database ----
+
+# disconnect ----
+cdmDisconnect(cdm = cdm)
