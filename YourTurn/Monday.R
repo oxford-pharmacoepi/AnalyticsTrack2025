@@ -1,5 +1,5 @@
 
-library(OmopSketch)
 library(duckdb)
-library(omock)
 library(CDMConnector)
+library(omock)
+library(OmopSketch)
