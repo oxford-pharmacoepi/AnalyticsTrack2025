@@ -50,3 +50,4 @@ rsconnect/
 
 *.duckdb
 *.duckdb.wal
+.DS_Store

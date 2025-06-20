@@ -29,9 +29,10 @@ mockDatasetsFolder()
 
 # download mock dataset
 options(timeout = 600)
-downloadMockDataset(datasetName = "GiBleed")
-downloadMockDataset(datasetName = "synthea-covid19-10k")
-downloadMockDataset(datasetName = "synthea-covid19-200k")
+downloadMockDataset(datasetName = "GiBleed", overwrite = FALSE)
+downloadMockDataset(datasetName = "synpuf-1k_5.3", overwrite = FALSE)
+downloadMockDataset(datasetName = "synthea-covid19-10k", overwrite = FALSE)
+downloadMockDataset(datasetName = "synthea-covid19-200k", overwrite = FALSE)
 
 # you can check now that a .zip file has been created in
 # /path/to/my/mockDatasets/folder/GiBleed.zip

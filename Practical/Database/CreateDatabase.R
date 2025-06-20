@@ -18,7 +18,7 @@ conditionOccurrence <- readr::read_csv(file = here::here("Database", "condition_
     visit_occurrence_id = 0L,
     visit_detail_id = 0L,
     condition_source_value = NA_character_,
-    condition_source_concept_id = 0L,
+    condition_source_concept_id = condition_concept_id,
     condition_status_source_value = NA_character_
   )
 cdm$condition_occurrence <- cdm$condition_occurrence |>
@@ -47,7 +47,7 @@ drugExposure <- readr::read_csv(file = here::here("Database", "drug_exposure_ext
     visit_occurrence_id = 0L,
     visit_detail_id = 0L,
     drug_source_value = NA_character_,
-    drug_source_concept_id = 0L,
+    drug_source_concept_id = drug_concept_id,
     route_source_value = NA_character_,
     dose_unit_source_value = NA_character_
   )
