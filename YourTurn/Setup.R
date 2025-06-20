@@ -31,6 +31,7 @@ mockDatasetsFolder()
 options(timeout = 600)
 downloadMockDataset(datasetName = "GiBleed")
 downloadMockDataset(datasetName = "synthea-covid19-10k")
+downloadMockDataset(datasetName = "synthea-covid19-200k")
 
 # you can check now that a .zip file has been created in
 # /path/to/my/mockDatasets/folder/GiBleed.zip
