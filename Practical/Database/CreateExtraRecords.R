@@ -40,7 +40,7 @@ generateDrugExposure <- function(x, nr, m, durations, probsD, concepts, relapse)
     dplyr::mutate(
       age_record = 1/m * log(runif(n = nr) * (exp(m*age_end) - exp(m*age_start)) + exp(m*age_start)),
       duration = sample(x = durations, size = nr, replace = TRUE, prob = probsD),
-      drug_exposure_start_date = observation_period_start_date + round((age_record - age_start) / 365.25),
+      drug_exposure_start_date = observation_period_start_date + round((age_record - age_start) * 365.25),
       drug_exposure_end_date = drug_exposure_start_date + duration - 1,
       drug_concept_id = sample(x = concepts, size = nr, replace = TRUE),
       relapse = dplyr::if_else(runif(n = nr) < relapse, 1, 0)
@@ -213,6 +213,17 @@ drugExposure |>
   dplyr::bind_rows() |>
   readr::write_csv(file = here::here("Database", "drug_exposure_extra_rows.csv"))
 
+femaleCond <- c(4128327, 4113841)
+otherCond <- ind |> purrr::map(\(x) names(x)) |> unlist() |> as.integer()
+females <- cdm$person |>
+  dplyr::filter(gender_concept_id == 8532) |>
+  dplyr::pull(person_id)
+
 conditionOccurrence |>
   dplyr::bind_rows() |>
+  dplyr::mutate(condition_concept_id = dplyr::if_else(
+    person_id %in% females & condition_concept_id %in% femaleCond,
+    sample(x = otherCond, size = dplyr::n(), replace = TRUE),
+    condition_concept_id
+  )) |>
   readr::write_csv(file = here::here("Database", "condition_occurrence_extra_rows.csv"))

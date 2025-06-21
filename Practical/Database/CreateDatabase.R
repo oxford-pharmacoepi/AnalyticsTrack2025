@@ -58,8 +58,7 @@ dbdir <- here::here("Database", "TestDatabase.duckdb")
 
 # delete database if exist
 if (file.exists(dbdir)) {
-  drv <- duckdb::duckdb(dbdir = dbdir)
-  duckdb::duckdb_shutdown(drv = drv)
+  duckdb::duckdb_shutdown(drv = duckdb::duckdb(dbdir = dbdir))
   unlink(x = dbdir)
 }
 
