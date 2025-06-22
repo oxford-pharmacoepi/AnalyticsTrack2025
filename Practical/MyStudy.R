@@ -4,6 +4,13 @@ library(duckdb)
 library(here)
 library(OmopSketch)
 library(CodelistGenerator)
+library(CohortConstructor)
+library(PhenotypeR)
+library(PatientProfiles)
+library(CohortCharacteristics)
+library(IncidencePrevalence)
+library(DrugUtilisation)
+library(CohortSurvival)
 
 # create the database ----
 # every time that you source the database will be created again
@@ -20,14 +27,14 @@ cdm <- cdmFromCon(
   cdmSchema = "main",
   writeSchema = "results",
   writePrefix = "rwess_",
-  cdmName = "SummerSchool2025"
+  cdmName = "SummerSchool2025",
+  # cohortTables = c("exposures", "pain") # uncomment if the cohorts have already been created (DAY 3 / DAY 4)
 )
 cdm
 
-# DAY 1 ----
-# characterise the database
+# DAY 1 - DATABASE CHARACTERISATION ----
 
-# get and visualise snapshot
+# summarise snapshot and visualise it in
 snapshot <- summariseOmopSnapshot(cdm = cdm)
 tableOmopSnapshot(result = snapshot)
 
@@ -194,9 +201,34 @@ indications <- importCodelist(path = here("Codelists", "indications"))
 
 # Visualise the result in a plot
 
-# Discontinuation, first we will do a proportion of patients covered analysis
+# Discontinuation
+# First, we will do a proportion of patients covered analysis for the
+# `exposures` cohort in the 180 days after starting the treatment. Visualise the
+# result in a plot colouring by exposure.
 
-# Drug restart
+# Now we will do it as a survival analysis. Using also 180 days followUp time.
+# Visualise the result in a plot colouring by exposure.
+
+# Compare both results, are they similar? Which one do you think it is more
+# informative?
+
+# Drug restart, lets analyse what happens after they finish the treatment. First
+# we will create the cohorts of interest. In this case acetaminophen, let's
+# create a cohort with only the acetaminophen records, and another one with
+# all the other exposures (switch)
+cdm$acetaminophen <- subsetCohorts(
+  cohort = cdm$exposures,
+  cohortId = "acetaminophen",
+  name = "acetaminophen"
+)
+cdm$switch <- subsetCohorts(
+  cohort = cdm$exposures,
+  cohortId = c("ibuprofen", "tramadol", "codeine"),
+  name = "switch"
+)
+
+# Now let's analyse the drug restart patterns, in the next year how many
+# individuals restart or switch to another treatment.
 
 # disconnect ----
 cdmDisconnect(cdm = cdm)
