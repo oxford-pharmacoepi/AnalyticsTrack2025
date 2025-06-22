@@ -66,8 +66,11 @@ if (file.exists(dbdir)) {
 drv <- duckdb::duckdb(dbdir = dbdir)
 con <- duckdb::dbConnect(drv = drv)
 DBI::dbExecute(con, "CREATE SCHEMA results")
+DBI::dbExecute(con, "CREATE SCHEMA achilles")
 src <- CDMConnector::dbSource(con = con, writeSchema = "main")
 cdm <- CDMConnector::insertCdmTo(cdm = cdm, to = src)
+cdm <- CDMConnector::cdmFromCon(con = con, cdmSchema = "main", writeSchema = "achilles")
+CodelistGenerator::buildAchillesTables(cdm = cdm)
 CDMConnector::cdmDisconnect(cdm = cdm)
 
 # delete objects
