@@ -8,7 +8,7 @@ pkg_install(c(
   "PatientProfiles", "IncidencePrevalence", "CohortConstructor",
   "DrugUtilisation", "OmopSketch", "visOmopResults", "CohortCharacteristics",
   "usethis", "gt", "shiny", "bslib", "OmopViewer", "omock", "DiagrammeR",
-  "DiagrammeRsvg", "rsvg", "png", "duckdb@1.2.2"
+  "DiagrammeRsvg", "rsvg", "png", "duckdb/duckdb-r"
 ))
 
 # edit r environment
