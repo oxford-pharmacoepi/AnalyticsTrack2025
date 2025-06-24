@@ -38,35 +38,67 @@ cdm
 # DAY 1 - DATABASE CHARACTERISATION ----
 
 # Extract metadata, summarise snapshot and visualise it in a table.
+snapshot <- summariseOmopSnapshot(cdm = cdm)
+tableOmopSnapshot(result = snapshot)
 
 # Summarise `observation_period` and visualise it in a table. Are there multiple
 # records per person? Which is the mean follow up?
+op <- summariseObservationPeriod(cdm$observation_period)
+tableObservationPeriod(result = op)
 
 # Characterise and summarise `condition_occurrence` and `drug_exposure`.
 # Visualise the result in a table.
 # Are there any records outside of observation? Should we be worried about it?
 # Which are the source vocabularies used?
 # Are there any non standard concept that we should worry about?
+summaryTables <- summariseClinicalRecords(
+  cdm = cdm,
+  omopTableName = c("drug_exposure", "condition_occurrence")
+)
+tableClinicalRecords(result = summaryTables)
 
 # Summarise missing values in `drug_exposure` and `condition_occurrence`.
 # Visualise the result in a table. Any of the main columns have missing values?
 # Are there any worring missing values?
+missings <- summariseMissingData(
+  cdm = cdm,
+  omopTableName = c("drug_exposure", "condition_occurrence")
+)
+tableMissingData(result = missings)
 
 # Summarise when individuals are in observation (use yearly or quarterly data so
 # you can see clearly the trends). Visualise the result in a plot.
 # When most of the individuals are in observation? Define a `studyPeriod`
 # given the results of the 'in observation' analysis.
+inObservation <- summariseInObservation(
+  observationPeriod = cdm$observation_period,
+  interval = "years"
+)
+plotInObservation(result = inObservation)
+studyPeriod <- as.Date(c("2014-01-01", "2021-12-31"))
 
 # Summarise the yearly record trends in `drug_exposure` and
 # `condition_occurrence`. Visualise the result in a plot. Are there any worring
 # trends? Did you see a change due to covid?
+recordTrends <- summariseRecordCount(
+  cdm = cdm,
+  omopTableName = c("drug_exposure", "condition_occurrence"),
+  interval = "years"
+)
+plotRecordCount(result = recordTrends, colour = "omop_table")
 
 # Summarise the concept ids in `condition_occurrence` and `drug_exposure`.
 # Visualise the result in a table to see the top concepts.
+concepts <- summariseConceptIdCounts(
+  cdm = cdm,
+  omopTableName = c("condition_occurrence", "drug_exposure")
+)
+tableTopConceptCounts(result = concepts)
 
 # Now create a reactable with all the concepts, can you explore and see if you
 # can find counts for concepts you might be interested? e.g. acetaminophen,
 # codeine, tramadol, ...
+tableConceptIdCounts(result = concepts)
 
 # To finalise the practice of today characterise the cdm. Stratify the results
 # by sex, by 5 year bands age groups and apply as dateRange the studyPeriod that
