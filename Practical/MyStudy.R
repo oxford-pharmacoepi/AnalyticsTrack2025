@@ -107,18 +107,44 @@ tableConceptIdCounts(result = concepts)
 # shiny? Spend the rest of the practical exploring the shiny to see the
 # characterisation of your cdm.
 # Note characterisation of the database will take 4 to 8 minutes.
+result <- databaseCharacteristics(
+  cdm = cdm,
+  sex = TRUE,
+  ageGroup = list(c(0, 19), c(20, 39), c(40, 59), c(60, 79), c(80, Inf)),
+  dateRange = studyPeriod
+)
+shinyCharacteristics(result = result, directory = here())
 
 # DAY 2 - CODELISTS AND COHORTS----
 
 # exposure codelists, create codelists for the following ingredients:
 # `acetaminophen`, `ibuprofen`, `codeine` and `tramadol`.
+codelist1 <- getDrugIngredientCodes(
+  cdm = cdm,
+  name = c("acetaminophen", "ibuprofen", "codeine", "tramadol"),
+  nameStyle = "{concept_name}"
+)
 
 # exposure codelists, create a second codelist that only includes drugs from a
 # single ingredient and with 'oral' route.
+codelist2 <- getDrugIngredientCodes(
+  cdm = cdm,
+  name = c("acetaminophen", "ibuprofen", "codeine", "tramadol"),
+  nameStyle = "{concept_name}",
+  routeCategory = "oral",
+  ingredientRange = c(1, 1)
+)
 
 # Let's now compare the codelists, can you find how many codes are present in
 # codelists1 that are not present in codelist2 and the other way around?
 # You will need some bespoke code to do that.
+for (nm in names(codelist1)) {
+  cat(paste0("Differences in `", nm, "` codelist:\n"))
+  compareCodelists(codelist1 = codelist1[nm], codelist2 = codelist2[nm]) |>
+    group_by(codelist) |>
+    tally() |>
+    print()
+}
 
 # Export the second group of codelists (single ingredient and oral route) to the
 # exposures folder. In this case we provide the code, please change the variable
@@ -133,6 +159,16 @@ exportCodelist(
 # Create codelists for 2 indications of interest: 'headache' and 'cough' and
 # save them in the `indications` folder. Use `csv` as type to export the
 # codelists in the `here("Codelists", "indications")` folder.
+indications <- list(
+  # you can customise more the codelist reviewing the codelist if you want
+  headache = getCandidateCodes(cdm = cdm, keywords = "headache")$concept_id,
+  cough = getCandidateCodes(cdm = cdm, keywords = "cough")$concept_id
+)
+exportCodelist(
+  x = indications,
+  path = here("Codelists", "indications"),
+  type = "csv"
+)
 
 # NOTE there are solutions for codelists (indications and exposures), manually
 # copy those codelists into the relevant folders if you had any problem creating
@@ -144,25 +180,90 @@ exposures <- importCodelist(path = here("Codelists", "exposures"), type = "csv")
 indications <- importCodelist(path = here("Codelists", "indications"), type = "csv")
 
 # Let's create some cohorts now
+
 # Create the `exposures` cohort:
 # I1. Collapse records using a gap of 7 days.
 # I2. Require at least 365 days of prior observation
 # I3. Include only record during the study period that you previously defined.
 # I4. Require a washout of 365 days (no use of the same drug, e.g. the
 # acetaminophen cohort has 0 records of acetaminophen use in the last 365 days).
+cdm$exposures <- conceptCohort(
+  cdm = cdm,
+  conceptSet = exposures,
+  name = "exposures"
+) |>
+  # inclusion criteria 1
+  collapseCohorts(gap = 7) |>
+  # inclusion criteria 2
+  requirePriorObservation(minPriorObservation = 365) |>
+  # inclusion criteria 3
+  requireInDateRange(dateRange = studyPeriod) |>
+  # inclusion criteria 4
+  requireConceptIntersect(
+    cohortId = "acetaminophen",
+    conceptSet = exposures["acetaminophen"],
+    window = c(-365, -1),
+    intersections = c(0, 0)
+  ) |>
+  requireConceptIntersect(
+    cohortId = "ibuprofen",
+    conceptSet = exposures["ibuprofen"],
+    window = c(-365, -1),
+    intersections = c(0, 0)
+  ) |>
+  requireConceptIntersect(
+    cohortId = "codeine",
+    conceptSet = exposures["codeine"],
+    window = c(-365, -1),
+    intersections = c(0, 0)
+  ) |>
+  requireConceptIntersect(
+    cohortId = "tramadol",
+    conceptSet = exposures["tramadol"],
+    window = c(-365, -1),
+    intersections = c(0, 0)
+  )
 
 # Create a `pain` cohort:
 # I1. Require at least 365 days of prior observation
 # I2. Include only record during the study period that you previously defined.
 # I3. Require a washout of 365 days (no record of pain in the last 365 days).
+cdm$pain <- conceptCohort(
+  cdm = cdm,
+  conceptSet = indications["pain"],
+  name = "pain"
+) |>
+  # inclusion criteria 1
+  requirePriorObservation(minPriorObservation = 365) |>
+  # inclusion criteria 2
+  requireInDateRange(dateRange = studyPeriod) |>
+  # inclusion criteria 3
+  requireConceptIntersect(
+    conceptSet = indications["pain"],
+    window = c(-365, -1),
+    intersections = c(0, 0)
+  )
 
 # Read all the codelists from `conditions`, `exposures`, `indications` and
 # `medications` and combine them (codelist = c(codelist1, codelist2, ...))
+conditions <- importCodelist(path = here("Codelists", "conditions"), type = "csv")
+medications <- importCodelist(path = here("Codelists", "medications"), type = "csv")
+codelists <- c(conditions, medications, indications, exposures) |>
+  newCodelist()
 
 # Create a base cohort for any of the different codelists.
+cdm$base_cohort <- conceptCohort(
+  cdm = cdm,
+  conceptSet = codelists,
+  name = "base_cohort"
+)
 
 # Use PhenotypeR on this cohort, create the shiny and explore it.
 # Note phenotypeDiagnostics can take several minutes.
+Sys.time()
+result <- phenotypeDiagnostics(cohort = cdm$base_cohort)
+Sys.time()
+shinyDiagnostics(result = result, directory = here()) # note this code will overwrite the prior shiny of OmopSketch
 
 # If you have time you can create more indications or conditions cohorts, you
 # can explore the shiny created with OmopSketch to see present concepts.
