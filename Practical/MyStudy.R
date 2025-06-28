@@ -271,8 +271,6 @@ shinyDiagnostics(result = result, directory = here()) # note this code will over
 # DAY 3 ----
 # read the codelists of interest
 exposures <- importCodelist(path = here("Codelists", "exposures"), type = "csv")
-medications <- importCodelist(path = here("Codelists", "medications"), type = "csv")
-conditions <- importCodelist(path = here("Codelists", "conditions"), type = "csv")
 indications <- importCodelist(path = here("Codelists", "indications"), type = "csv")
 
 # Export in separate png files the attrition of each cohort in `exposures`
