@@ -277,9 +277,16 @@ indications <- importCodelist(path = here("Codelists", "indications"), type = "c
 
 # Export in separate png files the attrition of each cohort in `exposures`
 # table.
+for (nm in names(exposures)) {
+  cdm$exposures |>
+    summariseCohortAttrition(cohortId = nm) |>
+    plotCohortAttrition()
+}
 
 # See overlap between cohorts in `exposures` table. Visualise the result in a
 # plot.
+overlap <- summariseCohortOverlap(cohort = cdm$exposures)
+plotCohortOverlap(result = overlap, uniqueCombinations = FALSE)
 
 # Characterise the exposures cohort
 # Include the following information:
@@ -291,6 +298,24 @@ indications <- importCodelist(path = here("Codelists", "indications"), type = "c
 # - number of visits in the prior 365 days
 # Visualise the result in a gt table, the table should compare the 4 cohorts
 # separated in 4 adjacent columns. Export the table into a word document.
+characteristics <- cdm$exposures |>
+  summariseCharacteristics(
+    demographics = TRUE,
+    conceptIntersectFlag = list(
+      "Indications prior 7 days" = list(
+        conceptSet = indications, window = c(-7, 0)
+      ),
+      "Indications prior 30 days" = list(
+        conceptSet = indications, window = c(-30, 0)
+      )
+    ),
+    tableIntersectCount = list(
+      "Number visits in prior year" = list(
+        tableName = "visit_occurrence", window = c(-365, 0)
+      )
+    )
+  )
+tableCharacteristics(result = characteristics)
 
 # Large scale characterisation, perform a large scale characterisation on the
 # `pain` cohort. Use the following windows: c(-90, -1), c(0, 0), c(1, 90); do it
@@ -298,12 +323,32 @@ indications <- importCodelist(path = here("Codelists", "indications"), type = "c
 # Visualise the result in two tables, first a table that displays the top
 # concepts per window; and then a second one that takes as a reference the
 # c(-90, -1) window to compare the values across the different windows.
+lsc <- summariseLargeScaleCharacteristics(
+  cohort = cdm$pain,
+  window = list(c(-90, -1), c(0, 0), c(1, 90)),
+  eventInWindow = "condition_occurrence",
+  episodeInWindow = "drug_exposure"
+)
+tableTopLargeScaleCharacteristics(result = lsc)
+tableLargeScaleCharacteristics(
+  result = lsc,
+  compareBy = "variable_level",
+  smdReference = c("-90 to -1")
+)
 
 # Generate the denominator cohort to conduct an incidence prevalence analysis
 # restrict to your study period, create 5 age groups using (20/25 years bands),
 # [IMPORTANT, remember to create an `overall` group, e.g. c(0, 150)]
 # and stratify by sex. Include in the analysis the individuals after 365 days of
 # prior observation.
+cdm <- generateDenominatorCohortSet(
+  cdm = cdm,
+  name = "denominator",
+  cohortDateRange = studyPeriod,
+  ageGroup = list(c(0, 150), c(0, 19), c(20, 39), c(40, 59), c(60, 79), c(80, 150)),
+  sex = c("Both", "Female", "Male"),
+  daysPriorObservation = 365L
+)
 
 # Create the outcome cohort, as incidence prevalence needs alls the records so
 # it applies prior observation and washouts correctly cretae the outcome cohort
@@ -319,12 +364,49 @@ cdm$outcome <- conceptCohort(
 
 # Estimate yearly incidence of the drug exposure cohorts, using repeated events
 # and a washout of 365 days.
+incidence <- estimateIncidence(
+  cdm = cdm,
+  denominatorTable = "denominator",
+  outcomeTable = "outcome",
+  outcomeWashout = 365,
+  repeatedEvents = TRUE,
+  interval = "years"
+)
 
 # Visualise the incidence of the different drugs in a plot, facet by sex
 # (horizontally) and age (vertically) and colour by exposure. Which is the
 # exposure with a higher incidence? Do we see any interesting trend?
+plotIncidence(
+  result = incidence,
+  colour = "outcome_cohort_name",
+  facet = denominator_age_group ~ denominator_sex
+)
 
 # Repeat the analyses for point and period prevalence if you have extra time.
+pointPrevalence <- estimatePointPrevalence(
+  cdm = cdm,
+  denominatorTable = "denominator",
+  outcomeTable = "outcome",
+  interval = "years",
+  timePoint = "start"
+)
+plotPrevalence(
+  result = pointPrevalence,
+  colour = "outcome_cohort_name",
+  facet = denominator_age_group ~ denominator_sex
+)
+
+periodPrevalence <- estimatePeriodPrevalence(
+  cdm = cdm,
+  denominatorTable = "denominator",
+  outcomeTable = "outcome",
+  interval = "years"
+)
+plotPrevalence(
+  result = periodPrevalence,
+  colour = "outcome_cohort_name",
+  facet = denominator_age_group ~ denominator_sex
+)
 
 # DAY 4 ----
 
@@ -333,23 +415,63 @@ cdm$outcome <- conceptCohort(
 # codelists), define 3 indication windows (c(0, 0), c(-7, 0), c(-30, 0)) and use
 # as unknown indication the `condition_occurrence` and `observation` tables.
 # Consider using mutually exclusive = FALSE as we have many indications.
+cdm$indications <- conceptCohort(
+  cdm = cdm,
+  conceptSet = indications,
+  name = "indications"
+)
+indicationSummary <- summariseIndication(
+  cohort = cdm$exposures,
+  indicationCohortName = "indications",
+  indicationWindow = list(c(0, 0), c(-7, 0), c(-30, 0)),
+  unknownIndicationTable = c("condition_occurrence", "observation"),
+  mutuallyExclusive = FALSE
+)
 
 # Visualise the results in a table.
+tableIndication(result = indicationSummary)
 
 # Characterise the treatments before and after pain record. Using the `pain`
 # cohort, as anchor summarise the treatments received before and after the
 # pain index date (cohort_start_date). Use the following windows: c(-30, -16);
 # c(-15, -1); c(0, 0); c(1, 15); c(16, 30); c(31, 45); c(46, 60).
+treatments <- summariseTreatment(
+  cohort = cdm$pain,
+  window = list(c(-30, -16), c(-15, -1),  c(0, 0),  c(1, 15),  c(16, 30),  c(31, 45), c(46, 60)),
+  treatmentCohortName = "exposures",
+  mutuallyExclusive = FALSE
+)
 
 # Visualise the result in a plot
+plotTreatment(result = treatments)
 
 # Discontinuation
 # First, we will do a proportion of patients covered analysis for the
 # `outcome` (exposures) cohort in the 180 days after starting the treatment.
 # Visualise the result in a plot colouring by exposure.
+ppc <- summariseProportionOfPatientsCovered(
+  cohort = cdm$outcome,
+  followUpDays = 180
+)
+plotProportionOfPatientsCovered(result = ppc, facet = "cdm_name", colour = "cohort_name")
 
 # Now we will do it as a survival analysis. Using also 180 days followUp time.
 # Visualise the result in a plot colouring by exposure.
+surv <- list()
+for (nm in seq_along(exposures)) {
+  surv[[nm]] <- estimateSingleEventSurvival(
+    cdm = cdm,
+    targetCohortTable = "outcome",
+    targetCohortId = nm,
+    outcomeCohortTable = "outcome",
+    outcomeCohortId = nm,
+    outcomeDateVariable = "cohort_end_date",
+    outcomeWashout = Inf,
+    followUpDays = 180
+  )
+}
+surv <- bind(surv)
+plotSurvival(result = surv, facet = "cdm_name", colour = "target_cohort")
 
 # Compare both results, are they similar? Which one do you think it is more
 # informative?
@@ -371,6 +493,12 @@ cdm$switch <- subsetCohorts(
 
 # Now let's analyse the drug restart patterns, in the next year how many
 # individuals restart or switch to another treatment.
+drugRestart <- summariseDrugRestart(
+  cohort = cdm$acetaminophen,
+  switchCohortTable = "switch",
+  followUpDays = 180
+)
+plotDrugRestart(result = drugRestart)
 
 # disconnect ----
 cdmDisconnect(cdm = cdm)
